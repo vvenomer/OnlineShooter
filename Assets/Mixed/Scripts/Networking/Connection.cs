@@ -41,6 +41,10 @@ class Connection
         {
             listener = new UdpClient(ep);
         }
+        //TO CHANGE!
+        //response should be recieved whenever aviable
+        //added to queue
+        //handled once every <listenDelay> ms
         new ProcFunc(Listener, listenDelay);
     }
     public int Send(byte[] data, IPAddress ip, int port)

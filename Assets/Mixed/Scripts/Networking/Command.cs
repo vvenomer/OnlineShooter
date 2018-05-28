@@ -1,6 +1,6 @@
 ﻿enum Command
 {
-    Join,
+    Connect,
     Send,
     Quit
 }

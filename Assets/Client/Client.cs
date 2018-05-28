@@ -2,26 +2,37 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Client : MonoBehaviour {
+namespace Client
+{
+    public class Client : MonoBehaviour
+    {
 
-    public GameObject player;
-    public GameObject camera;
+        public GameObject mainCamera;
 
-    public float rotSpeed = 150.0f;
-    public float movSpeed = 3.0f;
+        public float rotSpeed = 150.0f;
+        public float movSpeed = 3.0f;
 
-    public string ip = "127.0.0.1";
-    public int port = 1024;
-    
-	void Start () {
-        var playerMade = Instantiate(player);
-        Instantiate(camera, playerMade.transform);
+        public string ip = "127.0.0.1";
 
-        var controller = playerMade.AddComponent<Controller>();
-        controller.rotSpeed = rotSpeed;
-        controller.movSpeed = movSpeed;
+        public Vector2 spawnPos = Vector2.zero;
+        public float spawnAngle = 0;
 
-        var sender = playerMade.AddComponent<SendPos>();
-        
-	}
+        void Start()
+        {
+            var data = GetComponent<MixedData>();
+            var playerMade = Instantiate(data.player);
+            Instantiate(mainCamera, playerMade.transform);
+
+            var controller = playerMade.AddComponent<Controller>();
+            controller.rotSpeed = rotSpeed;
+            controller.movSpeed = movSpeed;
+
+            var sender = playerMade.AddComponent<SendPos>();
+            sender.ip = ip;
+            sender.port = data.port;
+            sender.recieveInterval = data.sendToClientInterval;
+            sender.playerPrefab = data.player;
+            sender.sendInterval = data.sendToServerInterval;
+        }
+    }
 }

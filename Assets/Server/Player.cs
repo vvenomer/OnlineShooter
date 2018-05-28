@@ -6,24 +6,23 @@ using UnityEngine;
 
 namespace Server
 {
-    public class Player : MonoBehaviour
+    public class Player
     {
         static int delay = 20;
         public IPAddress ip;
         public int port;
-        public string id;
         public bool valid;
-        Connection con;
+
+        public string id;
         public Vector2 position;
-        public Vector2 rotation;
+        public float rotation;
+        public Controller myController;
         public GameObject me;
+
+        Connection con;
         public static Vector2 DataToVec2(byte[] data, int offset)
         {
-            return new Vector2
-            {
-                x = BitConverter.ToSingle(data, 0 + offset),
-                y = BitConverter.ToSingle(data, 4 + offset)
-            };
+            return new Vector2(BitConverter.ToSingle(data, 0 + offset), BitConverter.ToSingle(data, 4 + offset));
         }
         public byte[] InfoToData()
         {
@@ -31,8 +30,7 @@ namespace Server
                 .Concat(Encoding.ASCII.GetBytes(id))
                 .Concat(BitConverter.GetBytes(position.x))
                 .Concat(BitConverter.GetBytes(position.y))
-                .Concat(BitConverter.GetBytes(rotation.x))
-                .Concat(BitConverter.GetBytes(rotation.y)).ToArray();
+                .Concat(BitConverter.GetBytes(rotation)).ToArray();
         }
         public Player(IPAddress ip, int playerPort, int recievePort)
         {
@@ -40,7 +38,8 @@ namespace Server
             this.ip = ip;
             port = playerPort;
             id = recievePort.ToString();
-            this.position = new Vector2() { x = 0, y = 0 };
+            this.position = Vector2.zero;
+            this.rotation = 0;
             con = new Connection(IPAddress.Any, recievePort, Handle, delay);
         }
         public void Send(byte[] data)
@@ -49,22 +48,24 @@ namespace Server
         }
         public void Handle(byte[] data, IPAddress ip, int port)
         {
-            if ( !ip.Equals(this.ip) )
+            if (!ip.Equals(this.ip))
             {
                 Debug.Log("Error sending info to player");
                 return;
             }
             Command cmd = (Command)BitConverter.ToInt32(data, 0);
-            switch(cmd)
+            switch (cmd)
             {
-                case Command.Join:
+                case Command.Connect:
                     this.port = port;
                     break;
                 case Command.Send:
-                    position = DataToPos(data, 4);
-                    rotation = DataToPos(data, 12);
-
-                    me = GetComponent<MixedData>().CreatePlayer(position, rotation);
+                    position = DataToVec2(data, 4);
+                    rotation = BitConverter.ToSingle(data, 12);
+                    if (myController != null)
+                    {
+                        myController.UpdatePos(position, rotation);
+                    }
                     break;
                 case Command.Quit:
                     valid = false;

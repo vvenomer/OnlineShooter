@@ -9,7 +9,7 @@ public class ProcFunc
     public delegate void Proc();
     Proc proc;
     int delay;
-    public ProcFunc(Proc proc, int delay)
+    public ProcFunc(Proc proc, int delay = 0)
     {
         this.proc = proc;
         this.delay = delay;
@@ -20,7 +20,8 @@ public class ProcFunc
         while (true)
         {
             proc();
-            Thread.Sleep(delay);
+            if(delay != 0)
+                Thread.Sleep(delay);
         }
     }
 }

@@ -9,14 +9,16 @@ namespace Server
 {
     class Server : MonoBehaviour
     {
-        int port = 1024;
+        public GameObject mainCamera;
+        int port;
         List<Player> players;
         Connection joinConnection;
+        MixedData data;
         void HandleJoining(byte[] data, IPAddress ip, int port)
         {
             this.port++;
             //is it right packet
-            if ((Command)BitConverter.ToInt32(data, 0) != Command.Join) return;
+            if ((Command)BitConverter.ToInt32(data, 0) != Command.Connect) return;
             //send mesege to console
             Debug.Log("Nowe połączenie od:" + ip.ToString() + ":" + port);
             //send back info where to send next packets
@@ -31,15 +33,13 @@ namespace Server
             if (players.Count == 0) return;
             byte[] playersInfo = new byte[0];
             //get players info
-            for (int i = 0; i < players.Count; i++)
+            foreach (Player player in players)
             {
-                if (!players[i].valid) //player has quited
+                if (!player.valid) //player has quited
                 {
-                    players.Remove(players[i]);
-                    i--;
                     continue;
                 }
-                playersInfo = playersInfo.Concat(players[i].InfoToData()).ToArray();
+                playersInfo = playersInfo.Concat(player.InfoToData()).ToArray();
             }
             //send it to players
             foreach (Player player in players)
@@ -49,23 +49,33 @@ namespace Server
         }
         void Update()
         {
-            //update player positions in scene
+
+            for (int i = 0; i < players.Count; i++)
+            {
+                if (players[i].valid && players[i].myController == null)
+                {
+                    players[i].me = this.data.CreatePlayer(Vector2.zero, 0);
+                    players[i].myController = players[i].me.AddComponent<Controller>();
+                }
+                if (!players[i].valid) //player has quited
+                {
+                    Destroy(players[i].me);
+                    players.Remove(players[i]);
+                    i--;
+                }
+                //update player positions in scene
+            }
         }
+
         void Start()
         {
-            var data = GetComponent<MixedData>();
-            Server prog = new Server
-            {
-                players = new List<Player>(),
-                port = data.port
-            };
-            prog.joinConnection = new Connection(IPAddress.Any, port, prog.HandleJoining, data.sendToServerInterval);
-            new ProcFunc(prog.SendInfo, data.sendToClientInterval);
-            while (true)
-            {
-                prog.Update();
-                Thread.Sleep(200);
-            }
+            data = GetComponent<MixedData>();
+            if(GetComponent<Client.Client>().enabled == false )
+                Instantiate(mainCamera);
+            players = new List<Player>();
+            port = data.port;
+            joinConnection = new Connection(IPAddress.Any, port, HandleJoining, data.sendToServerInterval);
+            new ProcFunc(SendInfo, data.sendToClientInterval);
         }
     }
 }
